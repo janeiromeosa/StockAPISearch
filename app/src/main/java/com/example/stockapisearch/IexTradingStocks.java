@@ -5,9 +5,9 @@ public class IexTradingStocks {
     private String symbol;
     private String companyName;
     private String primaryExchange;
-    private String iexRealTimePrice;
+    private double iexRealTimePrice;
 
-    public IexTradingStocks(String symbol, String companyName, String primaryExchange, String iexRealTimePrice) {
+    public IexTradingStocks(String symbol, String companyName, String primaryExchange, double iexRealTimePrice) {
         this.symbol = symbol;
         this.companyName = companyName;
         this.primaryExchange = primaryExchange;
@@ -38,11 +38,11 @@ public class IexTradingStocks {
         this.primaryExchange = primaryExchange;
     }
 
-    public String getIexRealTimePrice() {
+    public double getIexRealTimePrice() {
         return iexRealTimePrice;
     }
 
-    public void setIexRealTimePrice(String iexRealTimePrice) {
+    public void setIexRealTimePrice(double iexRealTimePrice) {
         this.iexRealTimePrice = iexRealTimePrice;
     }
 }

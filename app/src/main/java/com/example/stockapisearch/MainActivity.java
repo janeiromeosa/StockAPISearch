@@ -3,6 +3,7 @@ package com.example.stockapisearch;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -24,7 +25,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     TextView tvStatus;
     EditText etStock;
@@ -42,12 +43,36 @@ public class MainActivity extends AppCompatActivity {
 
 
 /*        try {
-          new APIWorker().execute(new URL("https://api.iextrading.com/1.0/stock/goog/quote" + ""));
+          new A
+          PIWorker().execute(new URL("https://api.iextrading.com/1.0/stock/goog/quote" + ""));
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }*/
-        new APIWorker();
 
+        btnSearch.setOnClickListener(this);
+
+
+    }
+
+    @Override
+    public void onClick(View v) {
+     switch(v.getId()) {
+         case R.id.btnSearch:
+             searchClicked();
+             break;
+        }
+    }
+
+    private void searchClicked() {
+        String symbol = etStock.getText().toString();
+        String url = "https://api.iextrading.com/1.0/stock/"+ symbol +"/quote";
+
+        try{
+            new APIWorker().execute(new URL(url));
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -58,13 +83,10 @@ public class MainActivity extends AppCompatActivity {
             StringBuilder result = new StringBuilder();
 
             try {
-                URL googleStock = new URL("https://api.iextrading.com/1.0/stock/goog/quote"); //creating URL object
-                HttpsURLConnection httpsUrlConnection = (HttpsURLConnection) googleStock.openConnection(); //obtain a URL connection
-//                HttpsURLConnection httpsURLConnection = (HttpsURLConnection)urls[0].openConnection(); //obtains a https connection and opens it
-                InputStream inputStream = new BufferedInputStream(httpsUrlConnection.getInputStream()); //creates a stream to read from https connection
+                HttpsURLConnection httpsURLConnection = (HttpsURLConnection)urls[0].openConnection(); //connection to server
+                InputStream inputStream = new BufferedInputStream(httpsURLConnection.getInputStream());//collect info from it,buffered perfect for our scenario
 
-                BufferedReader buffedReader = new BufferedReader(new InputStreamReader(inputStream));//allows the user to read from the stream.
-
+                BufferedReader buffedReader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
 
                 while ((line = buffedReader.readLine()) != null) { //reads until it reaches the end of the file
@@ -85,17 +107,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
             Gson gson = new Gson();
-            IexTradingStocks iexTradingStocks = gson.fromJson(s, IexTradingStocks.class);
+            IexTradingStocks iexTradingStocks = gson.fromJson(result, IexTradingStocks.class);
 
-            //List<IexTradingStocks> apiResults = Collections.singletonList(iexTradingStocks);
+            String symbol = iexTradingStocks.getSymbol();
+            String companyName = iexTradingStocks.getCompanyName();
+            String primaryExchange = iexTradingStocks.getPrimaryExchange();
+            double iexRealTimePrice = iexTradingStocks.getIexRealTimePrice();
 
-            tvStatus.setText(iexTradingStocks.getSymbol());
+            String info =   "Symbol: "+ symbol + "\n" +
+                            "Company Name: " +companyName + "\n" +
+                            "Primary Exchange: " + primaryExchange+ "\n" +
+                            "Real Time Price: " + iexRealTimePrice;
 
-
-
+            tvStatus.setText(info);
 
         }
     }
