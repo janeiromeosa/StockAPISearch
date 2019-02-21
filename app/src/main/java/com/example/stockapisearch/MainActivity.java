@@ -20,9 +20,17 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -40,18 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         etStock = findViewById(R.id.etStock);
         btnSearch = findViewById(R.id.btnSearch);
 
-
-
-/*        try {
-          new A
-          PIWorker().execute(new URL("https://api.iextrading.com/1.0/stock/goog/quote" + ""));
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }*/
-
         btnSearch.setOnClickListener(this);
-
-
     }
 
     @Override
@@ -64,66 +61,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void searchClicked() {
-        String symbol = etStock.getText().toString();
-        String url = "https://api.iextrading.com/1.0/stock/"+ symbol +"/quote";
 
-        try{
-            new APIWorker().execute(new URL(url));
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().
+                addInterceptor(new HttpLoggingInterceptor().
+                        setLevel(HttpLoggingInterceptor.Level.BODY)).
+                connectTimeout(20, TimeUnit.SECONDS).build();
 
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+        Retrofit.Builder retrofitBuilder = new Retrofit.Builder().
+                baseUrl(Constants.BASE_URL).client(okHttpClient).
+                addConverterFactory(GsonConverterFactory.create());
 
-    }
+        Retrofit retrofit = retrofitBuilder.build();
 
-    class APIWorker extends AsyncTask<URL, Void, String >{
+        IexTradingService iexTradingService = retrofit.create(IexTradingService.class);
 
-        @Override
-        protected String doInBackground(URL... urls) {
-            StringBuilder result = new StringBuilder();
+        iexTradingService.getRepos(etStock.getText().toString()).enqueue(new Callback<List<IexTradingRepo>>() {
+            @Override
+            public void onResponse(Call<List<IexTradingRepo>> call, Response<List<IexTradingRepo>> response) {
 
-            try {
-                HttpsURLConnection httpsURLConnection = (HttpsURLConnection)urls[0].openConnection(); //connection to server
-                InputStream inputStream = new BufferedInputStream(httpsURLConnection.getInputStream());//collect info from it,buffered perfect for our scenario
 
-                BufferedReader buffedReader = new BufferedReader(new InputStreamReader(inputStream));
-                String line;
+                String symbol = iexTradingStocks.getSymbol();
+                String companyName = iexTradingStocks.getCompanyName();
+                String primaryExchange = iexTradingStocks.getPrimaryExchange();
+                double iexRealTimePrice = iexTradingStocks.getIexRealTimePrice();
 
-                while ((line = buffedReader.readLine()) != null) { //reads until it reaches the end of the file
-                    result.append(line); //nicely adds whatever i read to the builder
-                }
+                String info =   "Symbol: "+ symbol + "\n" +
+                        "Company Name: " + companyName + "\n" +
+                        "Primary Exchange: " + primaryExchange + "\n" +
+                        "Real Time Price: " + iexRealTimePrice;
 
-            } catch (IOException e) {
-                e.printStackTrace();
+                tvStatus.setText(info);
             }
 
-            return result.toString();
-        }
+            @Override
+            public void onFailure(Call<List<IexTradingRepo>> call, Throwable t) {
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
+            }
+        });
 
-        }
+    }//searchclicked
 
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            Gson gson = new Gson();
-            IexTradingStocks iexTradingStocks = gson.fromJson(result, IexTradingStocks.class);
-
-            String symbol = iexTradingStocks.getSymbol();
-            String companyName = iexTradingStocks.getCompanyName();
-            String primaryExchange = iexTradingStocks.getPrimaryExchange();
-            double iexRealTimePrice = iexTradingStocks.getIexRealTimePrice();
-
-            String info =   "Symbol: "+ symbol + "\n" +
-                            "Company Name: " +companyName + "\n" +
-                            "Primary Exchange: " + primaryExchange+ "\n" +
-                            "Real Time Price: " + iexRealTimePrice;
-
-            tvStatus.setText(info);
-
-        }
-    }
-}
+}//do a recycler view
